@@ -29,4 +29,4 @@ g++ main.cpp -omain # 非常简单的编译指令
 
 ## Others
 
-- [Sirius Decryptor](https://github.com/SonolusHaniwa/sirius-decryptor-public):《世界大明星 梦想的群星》官谱的解密程序
+- [Sirius Decryptor](https://github.com/SonolusHaniwa/sirius-toolbox/tree/main/decryptor):《世界大明星 梦想的群星》官谱的解密程序
