@@ -6,7 +6,7 @@ Modify: [t-wy/hca.py](https://github.com/t-wy/hca.py)/hca_src
 
 Compile:
 
-```cpp
+```bash
 g++ HCADecoder.cpp clHCA.cpp -o HCADecoder -w
 ```
 
