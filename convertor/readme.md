@@ -1,6 +1,6 @@
 # Sirius Convertor
 
-请搭配 [Sirius Decryptor](https://github.com/SonolusHaniwa/sirius-decryptor-public) 使用。
+请搭配 [Sirius Decryptor](https://github.com/SonolusHaniwa/sirius-toolbox/tree/main/decryptor) 使用。
 
 将《世界大明星 梦想的群星》官方谱面转换为世界计划自制谱格式 (.sus) 的小程序。
 
