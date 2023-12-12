@@ -1,7 +1,3 @@
-struct System_String {
-	int32_t stringLength;
-	uint16_t firstChar;
-};
 struct AccessoryEffectMaster {
 	int64_t Id;
 	int64_t EffectMasterId;
@@ -23,9 +19,6 @@ struct AccessoryLevelPatternGroupMaster {
 	int64_t Id;
 	vector<struct AccessoryLevelPatternMaster> Patterns;
 };
-struct System_Int64 {
-	int64_t m_value;
-};
 struct AccessoryMaster {
 	int64_t Id;
 	struct System_String Name;
@@ -37,13 +30,6 @@ struct AccessoryMaster {
 	struct System_String PronounceName;
 	int32_t Series;
 	int32_t MaxLevel;
-};
-struct System_Decimal {
-	int32_t flags;
-	int32_t hi;
-	int32_t lo;
-	int32_t mid;
-	uint64_t ulomidLE;
 };
 struct AchivementRateRewardMaster {
 	int32_t ThingType;
@@ -75,9 +61,6 @@ struct AlbumThemeMaster {
 	int32_t Order;
 	struct System_String Name;
 };
-struct System_DateTime {
-	uint64_t dateData;
-};
 struct AuditionMaster {
 	int64_t Id;
 	int64_t MusicMasterId;
@@ -88,10 +71,6 @@ struct AuditionMaster {
 	struct System_DateTime DisplayStartAt;
 	struct System_DateTime DisplayEndAt;
 	int32_t VocalVersion;
-};
-struct System_Nullable_int {
-	bool hasValue;
-	int32_t value;
 };
 struct AuditionPhaseMaster {
 	int64_t Id;
@@ -110,10 +89,6 @@ struct AuditionRewardThing {
 struct AuditionRewardPackageMaster {
 	int64_t Id;
 	vector<struct AuditionRewardThing> Rewards;
-};
-struct System_Nullable_WebLinkTypes {
-	bool hasValue;
-	int32_t value;
 };
 struct BannerMaster {
 	int64_t Id;
@@ -144,14 +119,6 @@ struct BombMaster {
 struct EffectOrderMaster {
 	int32_t Order;
 	int64_t EffectMasterId;
-};
-struct System_Nullable_BranchJudgeTypes {
-	bool hasValue;
-	int32_t value;
-};
-struct System_Nullable_long {
-	bool hasValue;
-	int64_t value;
 };
 struct BranchMaster {
 	int64_t Id;
@@ -305,13 +272,13 @@ struct SiriusApi_Shared_Status {
 struct CharacterMaster {
 	int64_t Id;
 	int64_t CharacterBaseMasterId;
-	struct CharacterBaseMaster CharacterBaseMaster;
 	struct System_String Name;
 	struct System_String Description;
 	struct System_String AssetId;
 	int32_t Rarity;
 	int32_t Attribute;
 	struct SiriusApi_Shared_Status MinLevelStatus;
+	struct System_String UnknownVariable1;
 	int64_t StarActMasterId;
 	struct System_Nullable_long AwakenStarActMasterId;
 	int64_t SenseMasterId;
@@ -331,10 +298,6 @@ struct CharacterMissionCategoryLevelMaster {
 	int32_t GiveStarPoint;
 	struct System_DateTime StartDate;
 	struct System_DateTime EndDate;
-};
-struct System_Nullable_JumpTypes {
-	bool hasValue;
-	int32_t value;
 };
 struct CharacterMissionStageMaster {
 	int64_t Id;
@@ -543,10 +506,6 @@ struct EpisodeRewardPackageMaster {
 	int64_t Id;
 	vector<struct EpisodeRewardThing> Rewards;
 };
-struct System_Nullable_DateTime {
-	bool hasValue;
-	struct System_DateTime value;
-};
 struct ItemMaster {
 	int64_t Id;
 	struct System_String Name;
@@ -560,14 +519,6 @@ struct ItemMaster {
 	struct System_Nullable_long JumpTargetId;
 	int32_t TabCategory;
 	int32_t Rarity;
-};
-struct System_Nullable_ShopReplaceTypes {
-	bool hasValue;
-	int32_t value;
-};
-struct System_Nullable_ShopUnlockTypes {
-	bool hasValue;
-	int32_t value;
 };
 struct ExchangeShopThing {
 	int64_t Id;
@@ -715,9 +666,6 @@ struct HomeCharacterVoiceMaster {
 	struct System_String BodyMotionId3;
 	struct System_String BodyMotionId4;
 };
-struct System_TimeSpan {
-	int64_t ticks;
-};
 struct HomeCharacterVoicePeriodMaster {
 	int64_t Id;
 	int32_t StartMonth;
@@ -741,14 +689,6 @@ struct JewelShopCategoryMaster {
 	struct System_Nullable_int IsDisplayLocking;
 	struct System_String BannerPath;
 	int32_t Order;
-};
-struct System_Nullable_SaleTypes {
-	bool hasValue;
-	int32_t value;
-};
-struct System_Nullable_JewelShopUnlockTypes {
-	bool hasValue;
-	int32_t value;
 };
 struct JewelShopThing {
 	int64_t Id;
@@ -1149,10 +1089,6 @@ struct PosterLevelPatternGroupMaster {
 	int64_t Id;
 	vector<struct PosterLevelPatternMaster> Patterns;
 };
-struct System_Nullable_float {
-	bool hasValue;
-	float value;
-};
 struct PosterMaster {
 	int64_t Id;
 	struct System_String Name;
@@ -1294,6 +1230,7 @@ struct SpotConversationMaster {
 	struct System_Nullable_long CostumeId3;
 	struct System_Nullable_long CostumeId4;
 	struct System_Nullable_long CostumeId5;
+	struct System_String Title;
 };
 struct StaminaRecoveryItemMaster {
 	int64_t ItemMasterId;

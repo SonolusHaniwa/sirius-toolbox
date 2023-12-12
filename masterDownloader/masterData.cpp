@@ -44,8 +44,8 @@ Json::Value solveData(Json::Value originalData, string masterName) {
         string variableType = variableDefine.substr(0, variableDefine.find_last_of(" "));
         string variableName = variableDefine.substr(variableDefine.find_last_of(" ") + 1);
         variableName.pop_back();
-        if (variableType.find("vector<struct ") == string::npos) res[variableName] = originalData[i];
-        else {
+        if (variableType.find("struct ") == string::npos) res[variableName] = originalData[i];
+        else if (variableType.find("vector<struct ") != string::npos) {
             string structName = variableType.substr(variableType.find("vector<struct ") + 14);
             if (structName.find("System") != string::npos) res[variableName] = originalData[i];
             else {
@@ -54,6 +54,10 @@ Json::Value solveData(Json::Value originalData, string masterName) {
                     arr.append(solveData(originalData[i][j], structName));
                 res[variableName] = arr;
             }
+        } else if (variableType.find("struct ") != string::npos) {
+        	string structName = variableType.substr(variableType.find("struct ") + 7);
+        	if (master_structure.find(structName) == master_structure.end()) res[variableName] = originalData[i];
+        	else res[variableName] = solveData(originalData[i], structName);
         }
     } return res;
 }
