@@ -251,7 +251,6 @@ struct CharacterKeyMissionMaster {
 	int32_t GiveStarPoint;
 	struct System_DateTime StartDate;
 	struct System_DateTime EndDate;
-	struct System_String;
 };
 struct CharacterLessonScoreRewardMaster {
 	int64_t Id;
@@ -1166,7 +1165,6 @@ struct SenseEffectMaster {
 	int64_t EffectMasterId;
 };
 struct SenseBranchMaster {
-	int64_t Id;
 	int32_t Order;
 	vector<struct SenseEffectMaster> Effects;
 };
@@ -1182,10 +1180,6 @@ struct SenseMaster {
 	int32_t ScoreUpPerLevel;
 	int32_t LightCount;
 	int32_t CoolTime;
-	struct BranchConditionType BranchCondition1;
-	struct System_Nullable_long ConditionValue1;
-	struct BranchConditionType BranchCondition2;
-	struct System_Nullable_long ConditionValue2;
 };
 struct SenseNotationBuffMaster {
 	int64_t Id;
@@ -1220,14 +1214,6 @@ struct SignMaster {
 	int64_t CharacterBaseMasterId;
 	struct System_String SignImagePath;
 };
-struct SplashMaster {
-	int64_t Id;
-	int32_t Order;
-	struct SplashTypes SplashType;
-	struct System_String SplashValue;
-	struct System_DateTime StartDate;
-	struct System_DateTime EndDate;
-};
 struct SpotConversationMaster {
 	int64_t Id;
 	int32_t Spot;
@@ -1236,8 +1222,8 @@ struct SpotConversationMaster {
 	struct System_Nullable_long CharacterId3;
 	struct System_Nullable_long CharacterId4;
 	struct System_Nullable_long CharacterId5;
-	struct System_String ;
-	struct System_String ;
+	struct System_String UnknownVariable1;
+	struct System_String UnknownVariable2;
 	int64_t EpisodeMasterId;
 	struct System_Nullable_long CostumeId1;
 	struct System_Nullable_long CostumeId2;
@@ -1261,11 +1247,6 @@ struct StampMaster {
 	struct System_String VoiceAssetId;
 	struct System_String Name;
 };
-struct StarActBranchMaster {
-	int64_t Id;
-	int32_t Order;
-	vector<struct SenseEffectMaster> Effects;
-};
 struct StarActConditionMaster {
 	int64_t Id;
 	int32_t FreeLight;
@@ -1278,29 +1259,17 @@ struct StarActMaster {
 	int64_t Id;
 	struct System_String Name;
 	struct System_String Description;
-	struct System_String ;
+	struct System_String UnknownVariable1;
 	int64_t StarActConditionMasterId;
 	int32_t AcquirableScorePercent;
 	int32_t ScoreUpPerLevel;
 	vector<struct EffectOrderMaster> PreEffects;
 	vector<struct BranchMaster> Branches;
-	struct BranchConditionType BranchCondition1;
-	struct System_Nullable_long ConditionValue1;
-	struct BranchConditionType BranchCondition2;
-	struct System_Nullable_long ConditionValue2;
 };
 struct StarRankRewardMaster {
 	int32_t Rank;
 	int64_t CharacterBaseMasterId;
 	int64_t CharacterStarRankRewardGroupMasterId;
-};
-struct StepupGachaMaster {
-	int64_t GachaMasterId;
-	int32_t Step;
-};
-struct StepupGachaGroupMaster {
-	int64_t Id;
-	vector<struct StepupGachaMaster> StepupGachas;
 };
 struct StoryEventBonusCharacterBaseMaster {
 	int64_t Id;
