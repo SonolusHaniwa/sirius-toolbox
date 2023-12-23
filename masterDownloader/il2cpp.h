@@ -121,13 +121,13 @@ struct EffectOrderMaster {
 	int64_t EffectMasterId;
 };
 struct BranchMaster {
-	int64_t Id;
 	int32_t Order;
 	vector<struct EffectOrderMaster> BranchEffects;
 	struct System_Nullable_BranchJudgeTypes JudgeType1;
 	struct System_Nullable_long Parameter1;
 	struct System_Nullable_BranchJudgeTypes JudgeType2;
 	struct System_Nullable_long Parameter2;
+        int64_t Id;
 };
 struct CampaignMaster {
 	int64_t Id;
@@ -251,6 +251,7 @@ struct CharacterKeyMissionMaster {
 	int32_t GiveStarPoint;
 	struct System_DateTime StartDate;
 	struct System_DateTime EndDate;
+        int32_t RequiredCategoryCount;
 };
 struct CharacterLessonScoreRewardMaster {
 	int64_t Id;
@@ -1165,6 +1166,7 @@ struct SenseEffectMaster {
 	int64_t EffectMasterId;
 };
 struct SenseBranchMaster {
+        int32_t Id;
 	int32_t Order;
 	vector<struct SenseEffectMaster> Effects;
 };
@@ -1180,6 +1182,10 @@ struct SenseMaster {
 	int32_t ScoreUpPerLevel;
 	int32_t LightCount;
 	int32_t CoolTime;
+        int32_t BranchCondition1;
+        int32_t UnknownVariable1;
+        int32_t BranchCondition2;
+        int32_t UnknownVariable2;
 };
 struct SenseNotationBuffMaster {
 	int64_t Id;
@@ -1265,6 +1271,10 @@ struct StarActMaster {
 	int32_t ScoreUpPerLevel;
 	vector<struct EffectOrderMaster> PreEffects;
 	vector<struct BranchMaster> Branches;
+        int32_t BranchCondition1;
+        int32_t UnknownVariable2;
+        int32_t BranchCondition2;
+        int32_t UnknownVariable3;
 };
 struct StarRankRewardMaster {
 	int32_t Rank;
@@ -1399,6 +1409,22 @@ struct StoryRelationMaster {
 	vector<struct System_Int64> NextStoryMasterIds;
 	vector<struct System_Int64> SideStoryCharacterMasterIds;
 	vector<struct System_Int64> RelatedStoryMasterIds;
+};
+struct StepupGacha {
+        int32_t GachaMasterId;
+        int32_t Step;
+};
+struct StepupGachaGroupMaster {
+        int32_t Id;
+        vector<struct StepupGacha> StepupGachas;
+};
+struct SplashMaster {
+        int32_t Id;
+        int32_t Order;
+        int32_t SplashType;
+        struct System_String SplashValue;
+        struct System_DateTime StartDate;
+        struct System_DateTime EndDate;
 };
 struct TheaterRoleMaster {
 	struct System_String RoleName;
