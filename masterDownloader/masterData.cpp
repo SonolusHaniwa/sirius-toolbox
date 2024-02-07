@@ -31,35 +31,39 @@ string getMasterMemory(string url) {
 }
 
 map<string, Json::Value> master;
-map<string, vector<string> > master_structure;
+map<string, Json::Value> master_structure;
 Json::Value solveData(Json::Value originalData, string masterName) {
-    // for (int i = 0; i < master_structure[masterName].size(); i++) cout << master_structure[masterName][i] << endl;
-    if (originalData.size() != master_structure[masterName].size()) {
-        cout << masterName << " " << originalData.size() << " " << master_structure[masterName].size() << endl;
-        cout << originalData;
-        return Json::Value();
-    } Json::Value res;
-    for (int i = 0, j = 0; i < originalData.size() && j < master_structure[masterName].size(); i++, j++) {
-        string variableDefine = master_structure[masterName][j];
-        string variableType = variableDefine.substr(0, variableDefine.find_last_of(" "));
-        string variableName = variableDefine.substr(variableDefine.find_last_of(" ") + 1);
-        variableName.pop_back();
-        if (variableType.find("struct ") == string::npos) res[variableName] = originalData[i];
-        else if (variableType.find("vector<struct ") != string::npos) {
-            string structName = variableType.substr(variableType.find("vector<struct ") + 14);
-            if (structName.find("System") != string::npos) res[variableName] = originalData[i];
-            else {
-                structName.pop_back(); Json::Value arr;
-                for (int j = 0; j < originalData[i].size(); j++)
-                    arr.append(solveData(originalData[i][j], structName));
-                res[variableName] = arr;
-            }
-        } else if (variableType.find("struct ") != string::npos) {
-        	string structName = variableType.substr(variableType.find("struct ") + 7);
-        	if (master_structure.find(structName) == master_structure.end()) res[variableName] = originalData[i];
-        	else res[variableName] = solveData(originalData[i], structName);
+    Json::Value res;
+    if (master_structure.find(masterName) == master_structure.end()) {
+        return originalData;
+    }
+
+    auto structure = master_structure[masterName];
+    if (structure["type"] == "enum") {
+        string val = originalData.asString();
+        for (int i = 0; i < structure["value"].size(); i++) {
+            if (structure["value"][i]["value"].asString() == val) return structure["value"][i]["name"];
+        } // cout << "Enum Not Found! Info: \"" << val << "\" in \"" << masterName << "\"." << endl;
+        return val;
+    } else if (structure["type"] == "class") {
+        for (int i = 0; i < structure["value"].size(); i++) {
+            auto item = structure["value"][i];
+            string name = item["name"].asString();
+            string type = item["type"].asString();
+            if (item["key"].asString() == "") continue;
+            int key = atoi(item["key"].asCString());
+            if (type.substr(type.size() - 2) == "[]") {
+                Json::Value arr = Json::Value(); arr.resize(0);
+                if (originalData[key].isArray()) for (int j = 0; j < originalData[key].size(); j++) 
+                    arr.append(solveData(originalData[key][j], type.substr(0, type.size() - 2)));
+                res[name] = arr;
+            } else res[name] = solveData(originalData[key], type);
         }
-    } return res;
+    } else {
+        cout << "Unknwon Structure Type!" << endl;
+        assert(false);
+    }
+    return res;
 }
 
 string getApplicationVersion() {
@@ -115,10 +119,11 @@ int main(int argc, char** argv) {
 	} currentInfo["masterData.version"] = version;
 	
 	// 获取 Master Memory
-	string masterMemoryDB = getMasterMemory(masterData["result"]["uri"].asString());
-	ofstream fout(dir + "/master/mastermemory.db", ios::binary);
-	fout.write(const_cast<char*>(masterMemoryDB.c_str()), masterMemoryDB.size());
-	fout.close();
+	// string masterMemoryDB = getMasterMemory(masterData["result"]["uri"].asString());
+	// ofstream fout(dir + "/master/mastermemory.db", ios::binary);
+	// fout.write(const_cast<char*>(masterMemoryDB.c_str()), masterMemoryDB.size());
+	// fout.close();
+    string masterMemoryDB = readFile(dir + "/master/mastermemory.db");
 
 	// 解密 Master Memory
 	// 获取 offset 和 len
@@ -129,28 +134,19 @@ int main(int argc, char** argv) {
 	cout << "baseOffset = " << dataOffset << endl;
 	Json::Value::Members members = offsets.getMemberNames();
 	for (auto it = members.begin(); it != members.end(); it++) {
-		cout << (*it) << ": Offset = " << offsets[*it][0] << ", len = " << offsets[*it][1] << endl;
-		auto res = msgpack_decode_raw(masterMemoryDB.substr(dataOffset + offsets[*it][0].asInt(), offsets[*it][1].asInt()));
-		master[*it] = json_decode(res);
+		cout << (*it) << ": Offset = " << offsets[*it][0] << ", len = " << offsets[*it][1] << endl; int st = 0;
+		auto res = msgpack_decode(masterMemoryDB.substr(dataOffset + offsets[*it][0].asInt(), offsets[*it][1].asInt()), st);
+		master[*it] = res;
 	}
 
     // 数据转换
-    // 读取必要头文件
-    fin.open("il2cpp.h");
-    bool inStruct = false; string structName = "";
-    while (!fin.eof()) {
-        string s; getline(fin, s);
-        while (s.back() == '\n' || s.back() == '\r') s.pop_back();
-        if (!inStruct) if (s.find("struct ") != string::npos) {
-            inStruct = true, structName = s.substr(s.find("struct ") + 7);
-            structName.pop_back(); structName.pop_back();
-            master_structure[structName] = vector<string>(); 
-            cout << "Imported Struct " << structName << endl;
-            goto end; 
-        } if (s == "};") inStruct = false, structName = "";
-        if (inStruct) master_structure[structName].push_back(s);
-        end: continue;
-    } fin.close();
+    // 读取必要文件
+    string json = readFile(dir + "/master/table.json");
+    auto table = json_decode(json); members = table.getMemberNames();
+    for (auto it = members.begin(); it != members.end(); it++) {
+        string name = *it;
+        master_structure[name] = table[name];
+    }
 
     // 处理数据
     for (auto v : master) {

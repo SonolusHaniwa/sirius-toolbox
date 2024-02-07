@@ -1,6 +1,5 @@
 #include<curl/curl.h>
 #include<jsoncpp/json/json.h>
-#include<msgpack.hpp>
 #include<lz4.h>
 #include<openssl/aes.h>
 #include<brotli/decode.h>
@@ -51,7 +50,7 @@ string geturl(string url, vector<string> header, string data, bool post, map<str
             throw runtime_error(curl_easy_strerror(res));
         } int code = 0;
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
-		if (code != 200 && !skipFailed) {
+		if (code != 200) {
             if (retryTimes) {
                 cout << "Visit " << method << " " << url << ": Failed with code " << code << ", " << retryTimes << " times left." << endl;
                 return geturl(url, header, data, post, response, skipFailed, retryTimes - 1);
@@ -60,7 +59,9 @@ string geturl(string url, vector<string> header, string data, bool post, map<str
 			buffer << "Visit " << method << " " << url << ": Failed with code " << code << endl;
 			buffer << "Info: " << result << endl;
 			for (auto v : response) buffer << v.first << ": " << v.second << endl;
-			throw runtime_error(buffer.str());
+			buffer << "POST Data: " << data << endl;
+		 if (!skipFailed) throw runtime_error(buffer.str());
+    cout << buffer.str() << endl; return "";
 		}
         curl_easy_cleanup(curl);
         return result;
@@ -124,105 +125,106 @@ string str_replace(string from, string to, string source, bool supportTranfer = 
 		wh = result.find(from.c_str(), st);
 	} return result;
 }
-int TimestampExtType = -1;
-string getTime(int64_t sec) {
-	stringstream ss;
-	ss << put_time(localtime(&sec), "%Y-%m-%d %H:%M:%S");
-	return ss.str();
-}
-auto TimestampExtResolver = [](string s){
-	unsigned char* ch = new unsigned char[s.size()];
-	for (int i = 0; i < s.size(); i++) ch[i] = s[i];
-	int64_t sec = 0; int64_t nsec = 0;
-	switch (s.size()) {
-		case 4: {
-			for (int i = 0; i < 4; i++) sec <<= 8, sec |= ch[i];
-			return getTime(sec);
-		} break;
-		case 8: {
-			for (int i = 0; i < 8; i++) sec <<= 8, sec |= ch[i];
-			nsec = sec >> 34; nsec += nsec < 0 ? 0x40000000 : 0;
-			sec &= 0x3ffffffff;
-			return getTime(sec);
-		} break;
-		case 12: {
-			for (int i = 0; i < 4; i++) nsec <<= 8, nsec |= ch[i];
-			for (int i = 4; i < 12; i++) sec <<= 8, sec |= ch[i];
-			return getTime(sec);
-		} break;
-		default: return string("[Timestamp]"); break;
-	} return string("[Timestamp]");
-};
-class visitor {
-	public:
+// int TimestampExtType = 0xff;
+// string getTime(int64_t sec) {
+// 	stringstream ss;
+// 	ss << put_time(localtime(&sec), "%Y-%m-%d %H:%M:%S");
+// 	return ss.str();
+// }
+// auto TimestampExtResolver = [](string s){
+// 	unsigned char* ch = new unsigned char[s.size()];
+// 	for (int i = 0; i < s.size(); i++) ch[i] = s[i];
+// 	int64_t sec = 0; int64_t nsec = 0;
+// 	switch (s.size()) {
+// 		case 4: {
+// 			for (int i = 0; i < 4; i++) sec <<= 8, sec |= ch[i];
+// 			return getTime(sec);
+// 		} break;
+// 		case 8: {
+// 			for (int i = 0; i < 8; i++) sec <<= 8, sec |= ch[i];
+// 			nsec = sec >> 34; nsec += nsec < 0 ? 0x40000000 : 0;
+// 			sec &= 0x3ffffffff;
+// 			return getTime(sec);
+// 		} break;
+// 		case 12: {
+// 			for (int i = 0; i < 4; i++) nsec <<= 8, nsec |= ch[i];
+// 			for (int i = 4; i < 12; i++) sec <<= 8, sec |= ch[i];
+// 			return getTime(sec);
+// 		} break;
+// 		default: return string("[Timestamp]"); break;
+// 	} return string("[Timestamp]");
+// };
+// class visitor {
+// 	public:
 	
-	string& m_s;
-	visitor(string& m_s): m_s(m_s){}
-	map<int, function<string(string)> > extensions;
+// 	string& m_s;
+// 	visitor(string& m_s): m_s(m_s){}
+// 	map<int, function<string(string)> > extensions;
 	
-	void extendWidth(int type, function<string(string)> resolver) { extensions[type] = resolver; }
-	bool visit_nil() { m_s += "null"; return true; }
-	bool visit_boolean(bool v) { m_s += v ? "true" : "false"; return true; }
-	bool visit_positive_integer(uint64_t v) { stringstream ss; ss << v; m_s += ss.str(); return true; }
-	bool visit_negative_integer(int64_t v) { stringstream ss; ss << v; m_s += ss.str(); return true; }
-	bool visit_float32(float v) { stringstream ss; ss << v; m_s += ss.str(); return true; }
-	bool visit_float64(double v) { stringstream ss; ss << v; m_s += ss.str(); return true; }
-	bool visit_str(const char* v, uint32_t size) { m_s += '"' + str_replace("\"", "\\\"", string(v, size), false) + '"'; return true; }
-	bool visit_ext(const char* v, uint32_t size) { 
-		int type = v[0];
-		if (extensions.find(type) != extensions.end()) {
-			string s = "";
-			for (int i = 1; i < size; i++) s.push_back(v[i]);
-			m_s += '"' + str_replace("\"", "\\\"", extensions[type](s), false) + '"';
-			return true;
-		} stringstream ss; 
-		for (int i = 1; i < size; i++) ss << hex << setw(2) << setfill('0') << int((unsigned char)v[i]);
-		m_s += '"' + str_replace("\"", "\\\"", ss.str(), false) + '"';
-		return true;
-	}
-	bool visit_bin(const char* v, uint32_t size) { 
-		stringstream ss;
-		for (int i = 0; i < size; i++) ss << hex << setw(2) << setfill('0') << int((unsigned char)v[i]);
-		m_s += '"' + str_replace("\"", "\\\"", ss.str(), false) + '"';
-		return true;
-	}
-	bool start_array(uint32_t num_elements) { m_s += "["; return true; }
-	bool start_array_item() { return true; }
-	bool end_array_item() { m_s += ","; return true; }
-	bool end_array() { while(m_s.back() == ',') m_s.pop_back(); m_s += "]"; return true; }
-	bool start_map(uint32_t num_kv_pairs) { m_s += "{"; return true; }
-	bool start_map_key() { m_s += '"'; return true; }
-	bool end_map_key() { m_s += "\":"; return true; }
-	bool start_map_value() { return true; }
-	bool end_map_value() { m_s += ","; return true; }
-	bool end_map() { m_s.pop_back(); m_s += "}"; return true; }
-	void parse_error(size_t parsed_offset, size_t error_offset) {}
-	void insufficient_bytes(size_t parsed_offset, size_t error_offset) {}
-};
-Json::Value msgpack_decode(string data, int& off) {
-	stringstream buffer; size_t offset = 0;
-	buffer << msgpack::unpack(data.data(), data.size(), offset).get();
-	off = offset;
-	return json_decode(buffer.str());
-}
-string msgpack_decode_raw(string data) {
-	string str = "";
-	switch ((unsigned char)data[0]) {
-		case 0xc7: str = data.substr(3); break;
-		case 0xc8: str = data.substr(4); break;
-		case 0xc9: str = data.substr(6); break;
-		default: {
-			string buffer = ""; visitor vis(buffer);
-			vis.extendWidth(TimestampExtType, TimestampExtResolver);
-			auto res = msgpack::parse(data.data(), data.size(), vis);
-			return buffer;
-		}
-	} str = lz4_uncompress(str.substr(5));
-	string buffer = ""; visitor vis(buffer);
-	vis.extendWidth(TimestampExtType, TimestampExtResolver);
-	if (str != "") auto res = msgpack::parse(str.data(), str.size(), vis);
-	return buffer;
-}
+// 	void extendWidth(int type, function<string(string)> resolver) { extensions[type] = resolver; }
+// 	bool visit_nil() { m_s += "null"; return true; }
+// 	bool visit_boolean(bool v) { m_s += v ? "true" : "false"; return true; }
+// 	bool visit_positive_integer(uint64_t v) { stringstream ss; ss << v; m_s += ss.str(); return true; }
+// 	bool visit_negative_integer(int64_t v) { stringstream ss; ss << v; m_s += ss.str(); return true; }
+// 	bool visit_float32(float v) { stringstream ss; ss << v; m_s += ss.str(); return true; }
+// 	bool visit_float64(double v) { stringstream ss; ss << v; m_s += ss.str(); return true; }
+// 	bool visit_str(const char* v, uint32_t size) { m_s += '"' + str_replace("\"", "\\\"", string(v, size), false) + '"'; return true; }
+// 	bool visit_ext(const char* v, uint32_t size) { 
+// 		int type = v[0];
+// 		if (extensions.find(type) != extensions.end()) {
+// 			string s = "";
+// 			for (int i = 1; i < size; i++) s.push_back(v[i]);
+// 			m_s += '"' + str_replace("\"", "\\\"", extensions[type](s), false) + '"';
+// 			return true;
+// 		} stringstream ss; 
+// 		for (int i = 1; i < size; i++) ss << hex << setw(2) << setfill('0') << int((unsigned char)v[i]);
+// 		m_s += '"' + str_replace("\"", "\\\"", ss.str(), false) + '"';
+// 		return true;
+// 	}
+// 	bool visit_bin(const char* v, uint32_t size) { 
+// 		stringstream ss;
+// 		for (int i = 0; i < size; i++) ss << hex << setw(2) << setfill('0') << int((unsigned char)v[i]);
+// 		m_s += '"' + str_replace("\"", "\\\"", ss.str(), false) + '"';
+// 		return true;
+// 	}
+// 	bool start_array(uint32_t num_elements) { m_s += "["; return true; }
+// 	bool start_array_item() { return true; }
+// 	bool end_array_item() { m_s += ","; return true; }
+// 	bool end_array() { while(m_s.back() == ',') m_s.pop_back(); m_s += "]"; return true; }
+// 	bool start_map(uint32_t num_kv_pairs) { m_s += "{"; return true; }
+// 	bool start_map_key() { m_s += '"'; return true; }
+// 	bool end_map_key() { m_s += "\":"; return true; }
+// 	bool start_map_value() { return true; }
+// 	bool end_map_value() { m_s += ","; return true; }
+// 	bool end_map() { m_s.pop_back(); m_s += "}"; return true; }
+// 	void parse_error(size_t parsed_offset, size_t error_offset) {}
+// 	void insufficient_bytes(size_t parsed_offset, size_t error_offset) {}
+// };
+// Json::Value msgpack_decode(string data, int& off) {
+// 	stringstream buffer; size_t offset = 0;
+// 	buffer << msgpack::unpack(data.data(), data.size(), offset).get();
+// 	off = offset;
+// 	return json_decode(buffer.str());
+// }
+// string msgpack_decode_raw(string data) {
+// 	string str = "";
+// 	switch ((unsigned char)data[0]) {
+// 		case 0xc7: str = data.substr(3); break;
+// 		case 0xc8: str = data.substr(4); break;
+// 		case 0xc9: str = data.substr(6); break;
+// 		default: {
+// 			string buffer = ""; visitor vis(buffer);
+// 			vis.extendWidth(TimestampExtType, TimestampExtResolver);
+// 			auto res = msgpack::parse(data.data(), data.size(), vis);
+// 			return buffer;
+// 		}
+// 	} str = lz4_uncompress(str.substr(5));
+// 	string buffer = ""; visitor vis(buffer);
+// 	vis.extendWidth(TimestampExtType, TimestampExtResolver);
+// 	if (str != "") auto res = msgpack::parse(str.data(), str.size(), vis);
+// 	return buffer;
+// }
+#include"msgpack.h"
 
 // aes
 void hexout(string source) {
@@ -282,6 +284,95 @@ string brotli_decode(string in) {
     }
 }
 
+// base64 编码部分
+string base64_chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "abcdefghijklmnopqrstuvwxyz"
+    "0123456789+/";
+inline bool is_base64(unsigned char c) {
+    return (isalnum(c) || (c == '+') || (c == '/'));
+}
+string base64_encode(string str) {
+	int in_len = str.size();
+	char* bytes_to_encode = const_cast<char*>(str.c_str());
+    string ret;
+    int i = 0;
+    int j = 0;
+    unsigned char char_array_3[3];  // store 3 byte of bytes_to_encode
+    unsigned char char_array_4[4];  // store encoded character to 4 bytes
+
+    while (in_len--) {
+        char_array_3[i++] = *(bytes_to_encode++);  // get three bytes (24 bits)
+        if (i == 3) {
+            // eg. we have 3 bytes as ( 0100 1101, 0110 0001, 0110 1110) --> (010011, 010110, 000101, 101110)
+            char_array_4[0] = (char_array_3[0] & 0xfc) >> 2; // get first 6 bits of first byte,
+            char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4); // get last 2 bits of first byte and first 4 bit of second byte
+            char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6); // get last 4 bits of second byte and first 2 bits of third byte
+            char_array_4[3] = char_array_3[2] & 0x3f; // get last 6 bits of third byte
+
+            for (i = 0; (i < 4); i++)
+                ret += base64_chars[char_array_4[i]];
+            i = 0;
+        }
+    }
+
+    if (i) {
+        for (j = i; j < 3; j++)
+            char_array_3[j] = '\0';
+
+        char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+        char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+        char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+
+        for (j = 0; (j < i + 1); j++)
+            ret += base64_chars[char_array_4[j]];
+
+        while ((i++ < 3))
+            ret += '=';
+    }
+
+    return ret;
+}
+string base64_decode(string str) {
+    size_t in_len = str.size();
+    int i = 0;
+    int j = 0;
+    int in_ = 0;
+    unsigned char char_array_4[4], char_array_3[3];
+    vector<int> s;
+
+    while (in_len-- && (str[in_] != '=') && is_base64(str[in_])) {
+        char_array_4[i++] = str[in_]; in_++;
+        if (i == 4) {
+            for (i = 0; i < 4; i++)
+                char_array_4[i] = base64_chars.find(char_array_4[i]) & 0xff;
+
+            char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+            char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+            char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+            for (i = 0; (i < 3); i++)
+                s.push_back(char_array_3[i]);
+            i = 0;
+        }
+    }
+
+    if (i) {
+        for (j = 0; j < i; j++)
+            char_array_4[j] = base64_chars.find(char_array_4[j]) & 0xff;
+
+        char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+        char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+
+        for (j = 0; (j < i - 1); j++) s.push_back(char_array_3[j]);
+    }
+
+	string res;
+	for (int i = 0; i < s.size(); i++) res += (char)s[i];
+	return res;
+}
+
+
 vector<string> default_header = {
     "Content-Type: application/json",
     "Accept: application/json",
@@ -293,8 +384,9 @@ vector<string> default_header = {
     "TE: identity",
     "User-Agent: BestHTTP/2 v2.8.3",
 };
-string accountToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI0MTM3MzU1IiwibmJmIjoxNjk0NTQ0OTUzLCJleHAiOjE2OTQ1NDg1NTMsImlhdCI6MTY5NDU0NDk1MywiaXNzIjoic2lyaXVzLmttczMuY29tIiwiYXVkIjoic2lyaXVzIn0.uU_Ive-dHSPz-fUoQ3df7w0S_ZlSdDCeksdUovei5wM";
-string proxyUrl = "https://corsproxy.org/?";
+// string accountToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI0MTM3MzU1IiwibmJmIjoxNjk0NTQ0OTUzLCJleHAiOjE2OTQ1NDg1NTMsImlhdCI6MTY5NDU0NDk1MywiaXNzIjoic2lyaXVzLmttczMuY29tIiwiYXVkIjoic2lyaXVzIn0.uU_Ive-dHSPz-fUoQ3df7w0S_ZlSdDCeksdUovei5wM";
+string accountToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIyMDg4MjgzIiwibmJmIjoxNjkxOTQxOTk1LCJleHAiOjE2OTE5NDU1OTUsImlhdCI6MTY5MTk0MTk5NSwiaXNzIjoic2lyaXVzLmttczMuY29tIiwiYXVkIjoic2lyaXVzIn0.4b33nr8j-tYNHaztk5DgJgI-J_W6SVbDx7qETexxg6Q";
+string proxyUrl = "";
 map<string, string> cookie;
 string authorization = "";
 string apiBase = "";
@@ -355,19 +447,28 @@ string readFile(string path) {
     fin.seekg(0, ios::beg);
     if (size == -1) return "";
     char* buffer = new char[size];
-    fin.read(buffer, size);
-    fin.close();
+    fin.read(buffer, size); fin.close();
     string result = "";
     for (int i = 0; i < size; i++) result += buffer[i];
-    return result;
+    delete[] buffer; return result;
 }
 
 void writeFile(string path, string content) {
     ofstream fout(path);
-    fout << content;
-    fout.close();
+	fout.write(content.c_str(), content.size());
+	fout.close();
 }
 
 bool fileExists(string path) {
     return filesystem::exists(path) && filesystem::file_size(path) > 0;
+}
+
+vector<string> explode(const char* seperator, const char* source) {
+	string src = source; vector<string> res;
+	while (src.find(seperator) != string::npos) {
+		int wh = src.find(seperator);
+		res.push_back(src.substr(0, src.find(seperator)));
+		src = src.substr(wh + string(seperator).size());
+	} res.push_back(src);
+	return res;
 }

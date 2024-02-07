@@ -9,11 +9,15 @@ sudo apt install g++ libjsoncpp-dev openssl libbrotli-dev libcurl4-openssl-dev l
 ## Compile Program
 
 ```bash
+g++ dumpTable.cpp -o dumpTable -ljsoncpp -lcurl -lmsgpackc -lm -llz4 -lcrypto -lbrotlidec --std=c++17 -w -g
 g++ masterData.cpp -o masterData -ljsoncpp -lcurl -lmsgpackc -lm -llz4 -lcrypto -lbrotlidec --std=c++17 -w -g
 ```
 
 ## Usage
 
 ```bash
+./dumpTable [dump.cs] [dir/master/table.json]
 ./masterData [dir]
 ```
+
+dump.cs: [Download Link](https://github.com/LittleYang0531/sirius-inject/releases/latest)
