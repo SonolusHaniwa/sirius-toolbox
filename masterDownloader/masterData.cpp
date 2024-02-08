@@ -119,11 +119,11 @@ int main(int argc, char** argv) {
 	} currentInfo["masterData.version"] = version;
 	
 	// 获取 Master Memory
-	// string masterMemoryDB = getMasterMemory(masterData["result"]["uri"].asString());
-	// ofstream fout(dir + "/master/mastermemory.db", ios::binary);
-	// fout.write(const_cast<char*>(masterMemoryDB.c_str()), masterMemoryDB.size());
-	// fout.close();
-    string masterMemoryDB = readFile(dir + "/master/mastermemory.db");
+	string masterMemoryDB = getMasterMemory(masterData["result"]["uri"].asString());
+	ofstream fout(dir + "/master/mastermemory.db", ios::binary);
+	fout.write(const_cast<char*>(masterMemoryDB.c_str()), masterMemoryDB.size());
+	fout.close();
+    // string masterMemoryDB = readFile(dir + "/master/mastermemory.db");
 
 	// 解密 Master Memory
 	// 获取 offset 和 len
