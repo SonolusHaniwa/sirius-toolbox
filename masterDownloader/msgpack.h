@@ -21,7 +21,7 @@ Json::Value msgpack_decode(string str, int& st) {
         ll len = 1ll << ((uc)str[st] & 0b00000011), isSigned = (uc)str[st] >= 0xd0; long long num = 0; st++;
         for (ll i = 0; i < len; i++) num = (num << 8) + (uc)str[st + i];
         if (isSigned && num >= (1ll << (len * 8 - 1))) num -= (1ll << (len * 8));
-        res = num; st += len;
+        res = (Json::Int64)num; st += len;
     }
     // float
     else if ((uc)str[st] >= 0xca && (uc)str[st] <= 0xcb) {
