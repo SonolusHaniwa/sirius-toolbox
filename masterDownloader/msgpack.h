@@ -25,9 +25,22 @@ Json::Value msgpack_decode(string str, int& st) {
     }
     // float
     else if ((uc)str[st] >= 0xca && (uc)str[st] <= 0xcb) {
-        double num = 0; st++;
-        for (ll i = 0; i < ((uc)(str[st - 1]) == 0xca ? 4 : 8); i++) num = (num * 256) + (uc)str[st + i];
-        res = num; st += ((uc)(str[st - 1]) == 0xca ? 4 : 8);
+        unsigned long long num = 0; st++; bool type = (uc)str[st - 1] != 0xca;
+        for (ll i = 0; i < (1ll << (type + 2)); i++) num = (num << 8) + (uc)str[st + i];
+        double fnum = 0, base = 1;
+        if (!type) {
+            unsigned long long exp = (num >> 23) & (1ll << 8) - 1;
+            unsigned long long frac = num & (1ll << 23) - 1;
+            for (int i = 0; i < 23; i++) base /= 2.0, fnum += (frac >> i & 1) * base;
+            fnum += 1.0; fnum *= pow(2, ll(exp) - 127) * (1 - 2 * ((num >> 31) & 1));
+            fnum = round(fnum * 1e2) / 1e2;
+        } else {
+            unsigned long long exp = (num >> 52) & (1ll << 11) - 1;
+            unsigned long long frac = num & (1ll << 52) - 1;
+            for (int i = 0; i < 52; i++) base /= 2.0, fnum += (frac >> i & 1) * base;
+            fnum += 1.0; fnum *= pow(2, ll(exp) - 1023) * (1 - 2 * ((num >> 63) & 1));
+            fnum = round(fnum * 1e2) / 1e2;
+        } res = fnum; st += (1ll << (type + 2));
     }
     // string
     else if ((uc)str[st] >= 0xa0 && (uc)str[st] <= 0xbf) {
